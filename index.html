@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Здоровье+ | QR Трекер лекарств</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #5b6e8c;
+  --header-bg-start: #2c3e66;
+  --header-bg-end: #1a2a48;
+  --header-text: #ffffff;
+  --btn-gradient-start: #2c3e66;
+  --btn-gradient-end: #1f2f50;
+  --card-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  --border: #eef2ff;
+  --accent: #2c3e66;
+  --accent-light: #eef2ff;
+  --badge-bg: #eef2ff;
+  --badge-text: #2c3e66;
+  --input-border: #e2e8f0;
+  --history-border: #eff3f8;
+  --progress-bg: #e0e7ff;
+  --sos-red: #dc2626;
+  --sos-red-dark: #991b1b;
+  --sos-red-light: #fee2e2;
+}
+body.theme-dark {
+  --bg:#121826;--card-bg:#1e293b;--text:#e2e8f0;--text-secondary:#94a3b8;
+  --header-bg-start:#0f172a;--header-bg-end:#020617;--header-text:#f1f5f9;
+  --btn-gradient-start:#334155;--btn-gradient-end:#1e293b;
+  --card-shadow:0 8px 20px rgba(0,0,0,0.2);--border:#2d3a4f;
+  --accent:#818cf8;--accent-light:#312e81;--badge-bg:#312e81;--badge-text:#c7d2fe;
+  --input-border:#475569;--history-border:#2d3a4f;--progress-bg:#374151;
+  --sos-red-light:#450a0a;
+}
+body.theme-ocean {
+  --bg:#e0f2fe;--card-bg:#ffffff;--text:#0c4a6e;--text-secondary:#0369a1;
+  --header-bg-start:#0284c7;--header-bg-end:#075985;--header-text:#ffffff;
+  --btn-gradient-start:#0284c7;--btn-gradient-end:#0369a1;
+  --card-shadow:0 8px 20px rgba(2,132,199,0.1);--border:#bae6fd;
+  --accent:#0284c7;--accent-light:#e0f2fe;--badge-bg:#bae6fd;--badge-text:#0c4a6e;
+  --input-border:#7dd3fc;--history-border:#bae6fd;--progress-bg:#bae6fd;
+}
+body.theme-forest {
+  --bg:#f0fdf4;--card-bg:#ffffff;--text:#14532d;--text-secondary:#166534;
+  --header-bg-start:#15803d;--header-bg-end:#064e3b;--header-text:#f0fdf4;
+  --btn-gradient-start:#15803d;--btn-gradient-end:#166534;
+  --card-shadow:0 8px 20px rgba(21,128,61,0.1);--border:#bbf7d0;
+  --accent:#15803d;--accent-light:#dcfce7;--badge-bg:#bbf7d0;--badge-text:#14532d;
+  --input-border:#86efac;--history-border:#bbf7d0;--progress-bg:#bbf7d0;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Segoe UI',Roboto,system-ui,sans-serif;
+  background:linear-gradient(135deg,#1e2a5e 0%,#2b3b6e 100%);
+  width:100%;min-height:100vh;transition:background 0.3s;
+}
+.app-container{
+  width:100%;max-width:500px;margin:0 auto;
+  min-height:100vh;background:var(--bg);
+  box-shadow:0 0 35px rgba(0,0,0,0.25);color:var(--text);
+}
+.screen{display:none;min-height:100vh;background:var(--bg);}
+.screen.active{display:flex;flex-direction:column;}
+.header{
+  background:linear-gradient(135deg,var(--header-bg-start) 0%,var(--header-bg-end) 100%);
+  color:var(--header-text);padding:22px 20px;text-align:center;
+  box-shadow:0 4px 12px rgba(0,0,0,0.15);position:relative;
+}
+.header h1{font-size:24px;letter-spacing:-0.3px;font-weight:600;}
+.date{font-size:13px;opacity:0.85;}
+.back-btn{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,0.2);border:none;color:var(--header-text);
+  font-size:26px;cursor:pointer;width:40px;height:40px;
+  border-radius:30px;display:flex;align-items:center;justify-content:center;
+}
+.lang-btn{
+  position:absolute;right:18px;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,0.2);border:none;color:var(--header-text);
+  font-size:14px;cursor:pointer;padding:8px 12px;border-radius:20px;
+}
+.dashboard-grid{display:grid;gap:16px;padding:20px;flex:1;overflow-y:auto;}
+.card{
+  background:var(--card-bg);border-radius:28px;padding:18px 20px;
+  display:flex;align-items:center;gap:18px;
+  box-shadow:var(--card-shadow);cursor:pointer;
+  border:1px solid var(--border);transition:all 0.2s;color:var(--text);
+  text-align:left;width:100%;
+}
+.card:active{transform:scale(0.98);}
+.card-icon{
+  font-size:42px;width:70px;height:70px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--accent-light);border-radius:24px;flex-shrink:0;
+}
+.card-content h3{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.card-content p{color:var(--text-secondary);font-size:14px;font-weight:500;}
+
+/* SOS CARD — özel stil */
+.card-sos{
+  background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%) !important;
+  border:none !important;
+  box-shadow:0 8px 25px rgba(220,38,38,0.45) !important;
+}
+.card-sos .card-icon{background:rgba(255,255,255,0.2) !important;}
+.card-sos .card-content h3,.card-sos .card-content p{color:#fff !important;}
+.card-sos:active{transform:scale(0.97);}
+
+.bottom-nav{
+  display:flex;background:var(--card-bg);
+  box-shadow:0 -5px 18px rgba(0,0,0,0.06);z-index:100;
+  border-top:1px solid var(--border);
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:12px 5px;background:none;border:none;cursor:pointer;
+  color:#8e9aaf;font-size:12px;font-weight:500;
+}
+.nav-btn.active{color:var(--accent);font-weight:700;}
+.nav-btn .icon{font-size:26px;margin-bottom:4px;}
+.screen-content{padding:22px 18px;padding-bottom:80px;flex:1;overflow-y:auto;}
+.stat-card{
+  background:var(--card-bg);border-radius:28px;padding:20px;
+  margin-bottom:18px;box-shadow:var(--card-shadow);border:1px solid var(--border);
+  text-align:center;
+}
+.big-number{font-size:48px;font-weight:800;color:var(--accent);}
+.unit{font-size:15px;color:var(--text-secondary);margin-top:5px;}
+.btn{
+  display:block;width:100%;padding:14px;
+  background:linear-gradient(105deg,var(--btn-gradient-start) 0%,var(--btn-gradient-end) 100%);
+  color:white;border:none;border-radius:60px;font-size:16px;
+  font-weight:600;cursor:pointer;margin-top:12px;
+  box-shadow:0 4px 12px rgba(28,45,75,0.25);
+}
+.btn:active{transform:scale(0.97);}
+.btn-small{padding:10px 16px;font-size:14px;margin:4px;display:inline-block;width:auto;}
+.btn-outline{background:var(--card-bg);color:var(--accent);border:1.5px solid var(--input-border);box-shadow:none;}
+.btn-outline:active{background:var(--accent-light);}
+.btn-danger{background:linear-gradient(105deg,#dc2626,#991b1b) !important;box-shadow:0 4px 12px rgba(220,38,38,0.3) !important;}
+.med-grid-item{
+  background:var(--card-bg);border-radius:24px;padding:18px;margin-bottom:14px;
+  box-shadow:var(--card-shadow);border:1px solid var(--border);
+}
+.med-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;}
+.med-name{font-size:18px;font-weight:800;color:var(--text);}
+.med-badge{background:var(--badge-bg);padding:4px 12px;border-radius:40px;font-size:13px;font-weight:500;color:var(--badge-text);}
+.med-details{font-size:14px;color:var(--text-secondary);margin:10px 0;display:flex;gap:16px;flex-wrap:wrap;}
+.today-status{font-size:14px;font-weight:600;padding:6px 14px;border-radius:40px;width:fit-content;margin:8px 0;}
+.status-taken{color:#0f7b3a;background:#e0f2e9;}
+.status-missed{color:#b91c1c;background:#fee2e2;}
+.med-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:center;}
+.history-list{
+  background:var(--card-bg);border-radius:24px;overflow:hidden;
+  margin:12px 0;box-shadow:var(--card-shadow);
+}
+.history-item{
+  padding:14px 18px;border-bottom:1px solid var(--history-border);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.profile-avatar{text-align:center;font-size:82px;margin:20px 0;}
+input,select,textarea{
+  width:100%;padding:14px 16px;border:1.5px solid var(--input-border);
+  border-radius:12px;font-size:15px;margin-bottom:12px;
+  background:var(--card-bg);color:var(--text);font-family:inherit;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(44,62,102,0.2);}
+.toast{
+  position:fixed;top:22px;left:50%;transform:translateX(-50%);
+  background:#1e2a3a;color:white;padding:14px 24px;
+  border-radius:60px;font-size:15px;z-index:1200;display:none;
+  box-shadow:0 12px 28px rgba(0,0,0,0.3);font-weight:500;
+}
+.toast.show{display:block;animation:slideIn 0.25s ease;}
+@keyframes slideIn{
+  from{transform:translateX(-50%) translateY(-70px);opacity:0;}
+  to{transform:translateX(-50%) translateY(0);opacity:1;}
+}
+.qr-modal{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.85);z-index:2000;
+  align-items:center;justify-content:center;flex-direction:column;
+}
+.qr-modal.active{display:flex;}
+.qr-container{
+  background:var(--card-bg);width:90%;max-width:400px;border-radius:40px;
+  overflow:hidden;box-shadow:0 25px 40px rgba(0,0,0,0.3);
+}
+.qr-header{
+  background:var(--header-bg-start);padding:16px;color:var(--header-text);
+  display:flex;justify-content:space-between;align-items:center;font-weight:bold;
+}
+.qr-header button{background:none;border:none;color:var(--header-text);font-size:28px;cursor:pointer;}
+#qr-reader{width:100%;padding:15px;background:#000;min-height:300px;}
+.qr-info{padding:16px;background:var(--bg);text-align:center;font-size:14px;border-top:1px solid var(--border);}
+canvas{max-width:100%;margin:10px 0;}
+.lang-dropdown{
+  position:absolute;top:70px;right:10px;background:var(--card-bg);
+  border:1px solid var(--border);border-radius:12px;padding:8px;
+  display:none;z-index:500;min-width:160px;
+}
+.lang-dropdown.show{display:block;}
+.lang-dropdown button{
+  width:100%;padding:8px 12px;border:none;background:none;
+  cursor:pointer;text-align:left;color:var(--text);border-radius:8px;
+  font-size:14px;
+}
+.lang-dropdown button:hover{background:var(--accent-light);}
+.schedule-table{width:100%;border-collapse:collapse;margin:16px 0;}
+.schedule-table th,.schedule-table td{padding:12px;border:1px solid var(--border);text-align:left;font-size:13px;}
+.schedule-table th{background:var(--accent-light);font-weight:700;color:var(--accent);}
+.schedule-row-early{background:#fef3c7;}
+.schedule-row-morning{background:#dbeafe;}
+.schedule-row-afternoon{background:#dcfce7;}
+.schedule-row-evening{background:#fecaca;}
+.schedule-row-night{background:#e9d5ff;}
+.ai-chat{background:var(--card-bg);border-radius:24px;padding:16px;margin-bottom:16px;box-shadow:var(--card-shadow);}
+.ai-chat-header{font-weight:700;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.ai-chat-message{padding:12px;background:var(--accent-light);border-radius:12px;margin-bottom:8px;font-size:14px;line-height:1.5;}
+.ai-chat-input-group{display:flex;gap:8px;margin-top:12px;flex-direction:column;}
+.ai-chat-input-group textarea{flex:1;min-height:60px;margin-bottom:0;}
+.med-instructions{
+  background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;
+  border-radius:8px;margin:8px 0;font-size:13px;color:#92400e;
+}
+.sms-section{
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  border-radius:24px;padding:20px;margin-bottom:18px;color:white;
+  box-shadow:0 8px 25px rgba(102,126,234,0.4);
+}
+.sms-section h3{font-size:18px;font-weight:700;margin-bottom:8px;}
+.sms-section p{font-size:13px;opacity:0.9;margin-bottom:14px;}
+.sms-section input,.sms-section select{
+  background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
+  color:white;border-radius:12px;
+}
+.sms-section input::placeholder{color:rgba(255,255,255,0.6);}
+.sms-section .btn{
+  background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.4);
+  color:white;box-shadow:none;
+}
+.sms-log{
+  background:var(--card-bg);border-radius:16px;padding:12px;
+  margin-top:12px;max-height:200px;overflow-y:auto;
+}
+.sms-log-item{
+  padding:8px 12px;border-bottom:1px solid var(--border);
+  font-size:13px;display:flex;gap:8px;align-items:flex-start;
+}
+.sms-status-sent{color:#15803d;}
+.sms-status-pending{color:#b45309;}
+.expiry-warning{
+  background:#fef9c3;border:1px solid #fde047;border-radius:12px;
+  padding:10px 14px;margin:6px 0;font-size:13px;color:#854d0e;
+}
+.expiry-expired{
+  background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;
+  padding:10px 14px;margin:6px 0;font-size:13px;color:#991b1b;
+}
+
+/* ══════════════════════════════
+   SOS SCREEN — acil durum ekranı
+   ══════════════════════════════ */
+.sos-screen-bg{
+  background:linear-gradient(180deg,#1a0a0a 0%,#2d0f0f 100%) !important;
+}
+.sos-header{
+  background:linear-gradient(135deg,#991b1b,#7f1d1d) !important;
+}
+.sos-big-btn{
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,#ef4444 0%,#dc2626 50%,#991b1b 100%);
+  border:6px solid rgba(255,255,255,0.25);
+  color:white;font-size:22px;font-weight:900;cursor:pointer;
+  margin:20px auto;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 0 0 12px rgba(220,38,38,0.15), 0 0 40px rgba(220,38,38,0.4);
+  transition:transform 0.1s, box-shadow 0.2s;
+  text-align:center;line-height:1.2;
+  animation: sosPulse 2s infinite;
+}
+@keyframes sosPulse{
+  0%,100%{box-shadow:0 0 0 12px rgba(220,38,38,0.15),0 0 40px rgba(220,38,38,0.4);}
+  50%{box-shadow:0 0 0 22px rgba(220,38,38,0.05),0 0 60px rgba(220,38,38,0.6);}
+}
+.sos-big-btn:active{transform:scale(0.95);}
+.sos-contact-card{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  border-radius:20px;padding:16px 18px;margin-bottom:12px;
+  display:flex;justify-content:space-between;align-items:center;
+  color:#fff;
+}
+.sos-contact-name{font-size:16px;font-weight:700;color:#fff;}
+.sos-contact-phone{font-size:13px;color:rgba(255,255,255,0.7);margin-top:3px;}
+.sos-call-btn{
+  background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);
+  color:white;padding:10px 16px;border-radius:40px;font-size:14px;
+  font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.sos-call-btn:active{transform:scale(0.97);}
+.sos-info-box{
+  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+  border-radius:16px;padding:14px 18px;margin-bottom:12px;
+  color:rgba(255,255,255,0.85);font-size:13px;line-height:1.7;
+}
+.sos-info-box strong{color:#fff;}
+.sos-counter{
+  font-size:64px;font-weight:900;color:#ef4444;text-align:center;
+  margin:12px 0;text-shadow:0 0 30px rgba(239,68,68,0.5);
+  display:none;
+}
+.sos-status-msg{
+  text-align:center;font-size:15px;font-weight:600;
+  color:rgba(255,255,255,0.8);margin-bottom:8px;display:none;
+}
+.sos-cancel-btn{
+  display:none;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.4);
+  color:white;border-radius:60px;padding:14px;font-size:16px;font-weight:600;
+  cursor:pointer;width:100%;margin-top:8px;
+}
+
+/* DeepSeek rozet */
+.deepseek-badge{
+  background:linear-gradient(90deg,#1e40af,#1d4ed8);
+  color:white;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+  display:inline-block;margin-left:8px;vertical-align:middle;
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+
+<!-- DASHBOARD -->
+<div id="dashboard-screen" class="screen active">
+  <div class="header">
+    <button class="lang-btn" onclick="toggleLangDropdown()">🌐</button>
+    <h1 id="header-title">❤️ Здоровье+</h1>
+    <div class="date" id="currentDate"></div>
+    <div class="lang-dropdown" id="langDropdown">
+      <button onclick="setLanguage('ru')">🇷🇺 Русский</button>
+      <button onclick="setLanguage('tr')">🇹🇷 Türkçe</button>
+      <button onclick="setLanguage('ar')">🇸🇦 العربية</button>
+      <button onclick="setLanguage('en')">🇬🇧 English</button>
+    </div>
+  </div>
+  <div class="dashboard-grid">
+    <button class="card" onclick="openScreen('sleep')">
+      <div class="card-icon">😴</div>
+      <div class="card-content">
+        <h3 data-i18n="card_sleep">Сон</h3>
+        <p id="sleep-display">0 часов</p>
+      </div>
+    </button>
+    <button class="card" onclick="openScreen('water')">
+      <div class="card-icon">💧</div>
+      <div class="card-content">
+        <h3 data-i18n="card_water">Вода</h3>
+        <p id="water-display">0 мл</p>
+      </div>
+    </button>
+    <button class="card" onclick="openScreen('steps')">
+      <div class="card-icon">👟</div>
+      <div class="card-content">
+        <h3 data-i18n="card_steps">Шаги</h3>
+        <p id="steps-display">0 шагов</p>
+      </div>
+    </button>
+    <button class="card" onclick="openScreen('medicine')">
+      <div class="card-icon">💊</div>
+      <div class="card-content">
+        <h3 data-i18n="card_medicine">Лекарства</h3>
+        <p id="medicine-display">0 препаратов</p>
+      </div>
+    </button>
+    <button class="card" onclick="openScreen('schedule')">
+      <div class="card-icon">📅</div>
+      <div class="card-content">
+        <h3 data-i18n="card_schedule">График</h3>
+        <p data-i18n="schedule_display">Просмотр</p>
+      </div>
+    </button>
+    <button class="card" onclick="openScreen('sms')">
+      <div class="card-icon">📱</div>
+      <div class="card-content">
+        <h3 data-i18n="card_sms">SMS Напоминание</h3>
+        <p data-i18n="sms_display">Настройка</p>
+      </div>
+    </button>
+    <button class="card" onclick="openScreen('ai')">
+      <div class="card-icon">🤖</div>
+      <div class="card-content">
+        <h3 data-i18n="card_ai">AI Помощник</h3>
+        <p data-i18n="ai_display">Вопросы</p>
+      </div>
+    </button>
+    <!-- SOS CARD -->
+    <button class="card card-sos" onclick="openScreen('sos')">
+      <div class="card-icon">🆘</div>
+      <div class="card-content">
+        <h3 data-i18n="card_sos">Экстренная помощь</h3>
+        <p data-i18n="sos_display">SOS &amp; Контакты</p>
+      </div>
+    </button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="setActiveNav(this);openScreen('dashboard')">
+      <span class="icon">🏠</span><span data-i18n="nav_home">Главная</span>
+    </button>
+    <button class="nav-btn" onclick="setActiveNav(this);openScreen('stats')">
+      <span class="icon">📊</span><span data-i18n="nav_stats">Статистика</span>
+    </button>
+    <button class="nav-btn" onclick="setActiveNav(this);openScreen('profile')">
+      <span class="icon">👤</span><span data-i18n="nav_profile">Профиль</span>
+    </button>
+  </div>
+</div>
+
+<!-- SLEEP -->
+<div id="sleep-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="openScreen('dashboard')">←</button>
+    <h1 data-i18n="header_sleep">😴 Сон</h1>
+  </div>
+  <div class="screen-content">
+    <div class="stat-card">
+      <div class="big-number" id="sleep-total">0</div>
+      <div class="unit" data-i18n="sleep_hours_unit">часов сегодня</div>
+    </div>
+    <h2 data-i18n="sleep_add_title">Добавить сон</h2>
+    <input type="number" id="sleep-input" data-i18n-ph="ph_sleep_hours" placeholder="Длительность сна (часов)" min="0" max="24" step="0.5">
+    <button class="btn" onclick="addSleep()" data-i18n="sleep_save_btn">💾 Сохранить</button>
+    <h2 style="margin-top:20px;" data-i18n="sleep_history_title">История сна</h2>
+    <div id="sleep-history" class="history-list"></div>
+  </div>
+</div>
+
+<!-- WATER -->
+<div id="water-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="openScreen('dashboard')">←</button>
+    <h1 data-i18n="header_water">💧 Вода</h1>
+  </div>
+  <div class="screen-content">
+    <div class="stat-card">
+      <div class="big-number" id="water-total">0</div>
+      <div class="unit" data-i18n="water_unit">мл сегодня (цель: 2000 мл)</div>
+    </div>
+    <h2 data-i18n="water_quick_title">Быстрое добавление</h2>
+    <button class="btn btn-small" onclick="addWater(100)">+100 мл</button>
+    <button class="btn btn-small" onclick="addWater(250)">+250 мл</button>
+    <button class="btn btn-small" onclick="addWater(500)">+500 мл</button>
+    <br><br>
+    <input type="number" id="water-input" data-i18n-ph="ph_water_amount" placeholder="Другое количество (мл)">
+    <button class="btn" onclick="addWaterManual()" data-i18n="water_add_btn">💾 Добавить</button>
+    <h2 style="margin-top:20px;" data-i18n="water_history_title">История воды</h2>
+    <div id="water-history" class="history-list"></div>
+  </div>
+</div>
+
+<!-- STEPS -->
+<div id="steps-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="openScreen('dashboard')">←</button>
+    <h1 data-i18n="header_steps">👟 Шаги</h1>
+  </div>
+  <div class="screen-content">
+    <div class="stat-card">
+      <div class="big-number" id="steps-total">0</div>
+      <div class="unit" data-i18n="unit_steps">шагов сегодня</div>
+    </div>
+    <h2 data-i18n="steps_add_title">Добавить шаги</h2>
+    <input type="number" id="steps-input" data-i18n-ph="ph_steps" placeholder="Количество шагов">
+    <button class="btn" onclick="addSteps()" data-i18n="steps_save_btn">💾 Сохранить</button>
+    <h2 style="margin-top:20px;" data-i18n="steps_history_title">История шагов</h2>
+    <div id="steps-history" class="history-list"></div>
+  </div>
+</div>
+
+<!-- MEDICINE -->
+<div id="medicine-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="openScreen('dashboard')">←</button>
+    <h1 data-i18n="header_medicine">💊 Лекарства + QR</h1>
+  </div>
+  <div class="screen-content">
+    <div class="stat-card">
+      <div class="big-number" id="med-today-count">0</div>
+      <div class="unit" data-i18n="medicine_intakes_unit">приёмов сегодня</div>
+    </div>
+    <h2 data-i18n="med_add_title">➕ Добавить лекарство</h2>
+    <input type="text"   id="med-name"        data-i18n-ph="ph_med_name"    placeholder="Название (напр. Парацетамол)" autocomplete="off">
+    <input type="text"   id="med-dosage"      data-i18n-ph="ph_med_dosage"  placeholder="Дозировка (напр. 500мг)" autocomplete="off">
+    <input type="time"   id="med-time">
+    <select id="med-instruction">
+      <option value="" data-i18n="instr_select">Выберите инструкцию...</option>
+      <option value="before-meal" data-i18n="instr_before_meal">До еды</option>
+      <option value="with-meal"   data-i18n="instr_with_meal">Во время еды</option>
+      <option value="after-meal"  data-i18n="instr_after_meal">После еды</option>
+      <option value="with-water"  data-i18n="instr_with_water">С водой</option>
+      <option value="with-milk"   data-i18n="instr_with_milk">С молоком</option>
+      <option value="no-chew"     data-i18n="instr_no_chew">Не жевать</option>
+      <option value="dissolve"    data-i18n="instr_dissolve">Растворить</option>
+      <option value="other"       data-i18n="instr_other">Другое</option>
+    </select>
+    <input type="number" id="med-days" data-i18n-ph="ph_med_days" placeholder="Количество дней (0 = без ограничений)" min="0" value="0">
+    <button class="btn"         onclick="addNewMedicine()" data-i18n="med_save_btn">💾 Сохранить</button>
+    <button class="btn btn-outline" onclick="startQrScanner()" data-i18n="qr_scan_btn">📷 Сканировать QR</button>
+    <h2 style="margin-top:20px;" data-i18n="med_list_title">📋 Мои лекарства</h2>
+    <div id="medicine-list-container"></div>
+    <h2 style="margin-top:20px;" data-i18n="med_intake_history_title">📜 История приёмов</h2>
+    <div id="intake-history-list" class="history-list"></div>
+  </div>
+</div>
+
+<!-- SCHEDULE -->
+<div id="schedule-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="openScreen('dashboard')">←</button>
+    <h1 data-i18n="header_schedule">📅 График на день</h1>
+  </div>
+  <div class="screen-content">
+    <p data-i18n="schedule_desc" style="color:var(--text-secondary);margin-bottom:16px;">График лекарств на сегодня</p>
+    <div id="schedule-table-container"></div>
+  </div>
+</div>
+
+<!-- SMS -->
+<div id="sms-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="openScreen('dashboard')">←</button>
+    <h1 data-i18n="header_sms">📱 SMS Напоминание</h1>
+  </div>
+  <div class="screen-content">
+    <div class="sms-section">
+      <h3 data-i18n="sms_setup_title">📲 Настройки SMS (Twilio)</h3>
+      <p data-i18n="sms_setup_desc">Введите данные Twilio для автоматических SMS-напоминаний.</p>
+      <input type="text"     id="sms-account-sid"  placeholder="Twilio Account SID">
+      <input type="password" id="sms-auth-token"   placeholder="Twilio Auth Token">
+      <input type="tel"      id="sms-from-number"  placeholder="Twilio номер: +1234567890">
+      <input type="tel"      id="sms-to-number"    placeholder="Получатель: +79001234567">
+      <button class="btn" onclick="saveSmsSettings()" data-i18n="sms_save_btn">💾 Сохранить &amp; Тест</button>
+    </div>
+    <div class="stat-card">
+      <h3 data-i18n="sms_status_title">📊 Статус SMS</h3>
+      <div class="big-number" id="sms-sent-count" style="font-size:36px;">0</div>
+      <div class="unit" data-i18n="sms_sent_unit">отправлено сообщений</div>
+      <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <span id="sms-active-badge" style="background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;">⏸ Неактивно</span>
+        <span id="sms-phone-badge" style="background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:20px;font-size:12px;">📱 —</span>
+      </div>
+    </div>
+    <h3 style="margin-bottom:12px;" data-i18n="sms_log_title">📜 Журнал SMS</h3>
+    <div class="sms-log">
+      <div id="sms-log-container">
+        <div class="sms-log-item" style="color:var(--text-secondary);" data-i18n="no_sms_yet">SMS ещё не отправлялись.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI — DeepSeek -->
+<div id="ai-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="openScreen('dashboard')">←</button>
+    <h1 data-i18n="header_ai">🤖 AI Помощник <span class="deepseek-badge">DeepSeek</span></h1>
+  </div>
+  <div class="screen-content">
+    <div class="ai-chat">
+      <div class="ai-chat-header">💬 <span data-i18n="ai_title">Помощник здоровья</span> <span class="deepseek-badge">DeepSeek</span></div>
+      <div id="aiMessages"></div>
+      <div class="ai-chat-input-group">
+        <textarea id="aiQuestion" data-i18n-ph="ai_placeholder" placeholder="Задайте вопрос о здоровье..."></textarea>
+        <button class="btn" id="ai-send-btn" onclick="sendAiQuestion()" data-i18n="ai_send_btn">Отправить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SOS SCREEN -->
+<div id="sos-screen" class="screen sos-screen-bg">
+  <div class="header sos-header">
+    <button class="back-btn" onclick="cancelSos();openScreen('dashboard')">←</button>
+    <h1>🆘 Экстренная помощь</h1>
+  </div>
+  <div class="screen-content" style="padding-bottom:40px;">
+
+    <!-- Büyük SOS butonu -->
+    <div style="text-align:center;margin-bottom:10px;">
+      <button class="sos-big-btn" id="sosBigBtn" onclick="startSosCountdown()">
+        <span style="font-size:36px;">🆘</span>
+        <span>SOS</span>
+        <span style="font-size:13px;font-weight:500;opacity:0.9;" data-i18n="sos_press_hint">Нажмите для вызова</span>
+      </button>
+      <div class="sos-counter" id="sosCounter">5</div>
+      <div class="sos-status-msg" id="sosStatusMsg">📞 Вызов через...</div>
+      <button class="sos-cancel-btn" id="sosCancelBtn" onclick="cancelSos()" data-i18n="sos_cancel">❌ Отмена</button>
+    </div>
+
+    <!-- Acil rehber -->
+    <div class="sos-info-box">
+      <strong>🚨 Экстренные номера</strong><br>
+      📞 Скорая помощь: <strong>103</strong><br>
+      📞 Пожарная охрана: <strong>101</strong><br>
+      📞 Полиция: <strong>102</strong><br>
+      📞 Единый номер: <strong>112</strong>
+    </div>
+
+    <!-- Kişisel kontaklar -->
+    <h3 style="color:#fff;margin-bottom:12px;font-size:16px;">👥 Контакты для экстренных случаев</h3>
+    <div id="sos-contacts-list"></div>
+
+    <!-- Kontak ekle -->
+    <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:16px;margin-top:16px;">
+      <h3 style="color:#fff;font-size:15px;margin-bottom:12px;">➕ Добавить контакт</h3>
+      <input type="text"  id="sos-contact-name"  placeholder="Имя (напр. Мама)" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.25);color:white;">
+      <input type="tel"   id="sos-contact-phone" placeholder="Номер телефона (+79001234567)" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.25);color:white;">
+      <input type="text"  id="sos-contact-relation" placeholder="Отношение (Семья / Врач / Друг)" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.25);color:white;">
+      <button class="btn" onclick="addSosContact()" style="background:rgba(220,38,38,0.8);border:1px solid rgba(255,255,255,0.3);">➕ Добавить</button>
+    </div>
+
+    <!-- Tıbbi bilgiler -->
+    <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:16px;margin-top:16px;">
+      <h3 style="color:#fff;font-size:15px;margin-bottom:12px;">🩺 Медицинская карта</h3>
+      <input type="text"    id="sos-blood-type"   placeholder="Группа крови (A+, B-, AB+...)" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.25);color:white;">
+      <input type="text"    id="sos-allergies"    placeholder="Аллергии (через запятую)" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.25);color:white;">
+      <textarea             id="sos-chronic"      placeholder="Хронические заболевания..." rows="2" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.25);color:white;resize:none;"></textarea>
+      <button class="btn" onclick="saveMedCard()" style="background:rgba(220,38,38,0.8);border:1px solid rgba(255,255,255,0.3);">💾 Сохранить карту</button>
+      <div id="sos-med-card-display" style="margin-top:12px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- STATS -->
+<div id="stats-screen" class="screen">
+  <div class="header">
+    <h1 data-i18n="header_stats">📊 Статистика</h1>
+  </div>
+  <div class="screen-content">
+    <div class="stat-card">
+      <h3 data-i18n="stat_sleep_title">😴 Сон (сегодня)</h3>
+      <div class="big-number" id="stats-sleep">0</div>
+      <div class="unit" data-i18n="hours">часов</div>
+    </div>
+    <div class="stat-card">
+      <h3 data-i18n="stat_water_title">💧 Вода</h3>
+      <div class="big-number" id="stats-water">0</div>
+      <div class="unit">мл</div>
+    </div>
+    <div class="stat-card">
+      <h3 data-i18n="stat_steps_title">👟 Шаги</h3>
+      <div class="big-number" id="stats-steps">0</div>
+      <div class="unit" data-i18n="steps">шагов</div>
+    </div>
+    <div class="stat-card">
+      <h3 data-i18n="stat_med_title">💊 Лекарства</h3>
+      <div class="big-number" id="stats-medicine-count">0</div>
+      <div class="unit" data-i18n="unit_stat_med">активных препаратов</div>
+    </div>
+    <div class="stat-card">
+      <h3 data-i18n="stat_intakes_title">✅ Приёмы сегодня</h3>
+      <div class="big-number" id="stats-today-intakes">0</div>
+      <div class="unit" data-i18n="unit_stat_intakes">зафиксированных приёмов</div>
+    </div>
+    <button class="btn" onclick="openScreen('charts')" data-i18n="charts_btn">📈 Недельные графики</button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="setActiveNav(this);openScreen('dashboard')">
+      <span class="icon">🏠</span><span data-i18n="nav_home">Главная</span>
+    </button>
+    <button class="nav-btn active" onclick="setActiveNav(this);openScreen('stats')">
+      <span class="icon">📊</span><span data-i18n="nav_stats">Статистика</span>
+    </button>
+    <button class="nav-btn" onclick="setActiveNav(this);openScreen('profile')">
+      <span class="icon">👤</span><span data-i18n="nav_profile">Профиль</span>
+    </button>
+  </div>
+</div>
+
+<!-- CHARTS -->
+<div id="charts-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="openScreen('stats')">←</button>
+    <h1 data-i18n="header_charts">📈 Недельные графики</h1>
+  </div>
+  <div class="screen-content">
+    <div class="stat-card">
+      <h3 data-i18n="chart_sleep_title">😴 Сон за 7 дней</h3>
+      <canvas id="sleepChart" width="300" height="150"></canvas>
+    </div>
+    <div class="stat-card">
+      <h3 data-i18n="chart_water_title">💧 Вода за 7 дней</h3>
+      <canvas id="waterChart" width="300" height="150"></canvas>
+    </div>
+    <div class="stat-card">
+      <h3 data-i18n="chart_steps_title">👟 Шаги за 7 дней</h3>
+      <canvas id="stepsChart" width="300" height="150"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="profile-screen" class="screen">
+  <div class="header">
+    <h1 data-i18n="header_profile">👤 Профиль</h1>
+  </div>
+  <div class="screen-content">
+    <div class="profile-avatar">❤️🩺</div>
+    <div class="stat-card">
+      <h3>Здоровье+ — Pro + QR + AI + SMS + SOS</h3>
+      <p>Трекинг здоровья + QR + DeepSeek AI + SMS + Экстренная помощь</p>
+    </div>
+    <label data-i18n="theme_label">Тема:</label>
+    <select id="themeSelector" onchange="changeTheme(this.value)">
+      <option value="light">🌞 Светлая тема</option>
+      <option value="dark">🌙 Тёмная тема</option>
+      <option value="ocean">🌊 Океан</option>
+      <option value="forest">🌲 Лес</option>
+    </select>
+    <label>DeepSeek API Key:</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-...  (deepseek.com)">
+    <button class="btn" onclick="saveApiKey()">💾 Сохранить API Key</button>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px;margin:8px 0;font-size:13px;color:#1e40af;">
+      ℹ️ <strong>DeepSeek бесплатно:</strong> Зарегистрируйтесь на <strong>platform.deepseek.com</strong>, получите бесплатный API ключ и вставьте его сюда.
+    </div>
+    <button class="btn" onclick="exportData()">📁 Экспорт данных (JSON)</button>
+    <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">📂 Импорт из файла</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="btn" style="background:#b91c1c;margin-top:20px;" onclick="clearAllData()">🗑️ Удалить все данные</button>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="setActiveNav(this);openScreen('dashboard')">
+      <span class="icon">🏠</span><span data-i18n="nav_home">Главная</span>
+    </button>
+    <button class="nav-btn" onclick="setActiveNav(this);openScreen('stats')">
+      <span class="icon">📊</span><span data-i18n="nav_stats">Статистика</span>
+    </button>
+    <button class="nav-btn active" onclick="setActiveNav(this);openScreen('profile')">
+      <span class="icon">👤</span><span data-i18n="nav_profile">Профиль</span>
+    </button>
+  </div>
+</div>
+
+<!-- QR MODAL -->
+<div id="qrModal" class="qr-modal">
+  <div class="qr-container">
+    <div class="qr-header">
+      <span>📷 Наведите камеру на QR-код</span>
+      <button onclick="stopQrScanner();document.getElementById('qrModal').classList.remove('active');">&times;</button>
+    </div>
+    <div id="qr-reader"></div>
+    <div class="qr-info">🔍 Ожидание сканирования...</div>
+  </div>
+</div>
+
+</div><!-- /app-container -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// TRANSLATIONS
+// ═══════════════════════════════════════════════════════════════════════
+const LANG = {
+  ru: {
+    header_title:'❤️ Здоровье+',
+    card_sleep:'Сон', card_water:'Вода', card_steps:'Шаги',
+    card_medicine:'Лекарства', card_schedule:'График', card_sms:'SMS Напоминание',
+    card_ai:'AI Помощник', card_sos:'Экстренная помощь',
+    nav_home:'Главная', nav_stats:'Статистика', nav_profile:'Профиль',
+    header_sleep:'😴 Сон', sleep_add_title:'Добавить сон', sleep_save_btn:'💾 Сохранить',
+    sleep_history_title:'История сна', hours:'часов', sleep_hours_unit:'часов сегодня',
+    header_water:'💧 Вода', water_quick_title:'Быстрое добавление', water_add_btn:'💾 Добавить',
+    water_history_title:'История воды', water_unit:'мл сегодня (цель: 2000 мл)',
+    header_steps:'👟 Шаги', steps_add_title:'Добавить шаги', steps_save_btn:'💾 Сохранить',
+    steps_history_title:'История шагов', steps:'шагов', unit_steps:'шагов сегодня',
+    header_medicine:'💊 Лекарства + QR', med_add_title:'➕ Добавить лекарство', med_save_btn:'💾 Сохранить',
+    med_list_title:'📋 Мои лекарства', med_intake_history_title:'📜 История приёмов',
+    medicine_intakes_unit:'приёмов сегодня', medicines:'препарат', intakes:'приём',
+    take_now:'Принять', edit:'Ред.', delete:'Удалить', taken:'Принято', not_taken:'Не принято',
+    qr_scan_btn:'📷 Сканировать QR',
+    header_schedule:'📅 График на день', schedule_desc:'График лекарств на сегодня',
+    schedule_display:'Просмотр', schedule_time:'Время', schedule_medicine:'Лекарство',
+    schedule_instruction:'Инструкция', schedule_status:'Статус',
+    night:'Ночь', early_morning:'Раннее утро', morning:'Утро', afternoon:'День', evening:'Вечер',
+    header_sms:'📱 SMS Напоминание', sms_display:'Настройка',
+    sms_setup_title:'📲 Настройки SMS (Twilio)', sms_setup_desc:'Введите данные Twilio для автоматических SMS-напоминаний.',
+    sms_save_btn:'💾 Сохранить и тест', sms_status_title:'📊 Статус SMS',
+    sms_sent_unit:'отправлено сообщений', sms_log_title:'📜 Журнал SMS',
+    no_sms_yet:'SMS ещё не отправлялись.',
+    header_ai:'🤖 AI Помощник', ai_title:'Помощник здоровья', ai_send_btn:'Отправить',
+    ai_placeholder:'Задайте вопрос о здоровье...', ai_display:'Вопросы',
+    header_stats:'📊 Статистика', stat_sleep_title:'😴 Сон (сегодня)',
+    stat_water_title:'💧 Вода', stat_steps_title:'👟 Шаги', stat_med_title:'💊 Лекарства',
+    stat_intakes_title:'✅ Приёмы сегодня', unit_stat_med:'активных препаратов',
+    unit_stat_intakes:'зафиксированных приёмов', charts_btn:'📈 Недельные графики',
+    header_charts:'📈 Недельные графики', chart_sleep_title:'😴 Сон за 7 дней',
+    chart_water_title:'💧 Вода за 7 дней', chart_steps_title:'👟 Шаги за 7 дней',
+    header_profile:'👤 Профиль',
+    theme_label:'Тема:', theme_light:'🌞 Светлая', theme_dark:'🌙 Тёмная',
+    theme_ocean:'🌊 Океан', theme_forest:'🌲 Лес',
+    enter_name:'Введите название', med_added:'Добавлено: ', med_deleted:'Удалено',
+    confirm_delete:'Удалить это лекарство?', no_data:'Нет данных',
+    no_medicines:'Лекарства не добавлены', no_records:'Нет записей',
+    invalid_qr:'❌ Неверный QR-код', qr_added:'💊 QR добавлен: ',
+    time_take:'Время принять: ', dosage_lbl:'Дозировка', name_lbl:'Название', time_lbl:'Время', days_lbl:'дней',
+    enter_api_key:'Введите API Key', api_saved:'✅ API Key сохранён',
+    camera_error:'Ошибка камеры', updated:'✅ Обновлено',
+    data_exported:'📁 Данные экспортированы', data_imported:'✅ Данные импортированы',
+    invalid_file:'❌ Неверный формат', file_error:'❌ Ошибка чтения',
+    data_cleared:'🗑️ Данные удалены', confirm_clear_all:'Удалить все данные? Нельзя отменить.',
+    reminder:'Напоминание: ', sleep:'Сон',
+    sms_saved:'✅ Настройки SMS сохранены', sms_test_sent:'📱 Тестовое SMS отправлено!',
+    sms_error:'❌ Ошибка отправки: ', sms_enter_all:'Заполните все поля SMS',
+    sms_sent_log:'SMS Отправлено', sms_active:'✅ Активно', sms_passive:'⏸ Неактивно',
+    expiry_warning:'⚠️ {n} дней осталось', expiry_expired:'🚫 Истёк срок',
+    instr_select:'Выберите инструкцию...', instr_before_meal:'До еды',
+    instr_with_meal:'Во время еды', instr_after_meal:'После еды',
+    instr_with_water:'С водой', instr_with_milk:'С молоком',
+    instr_no_chew:'Не жевать', instr_dissolve:'Растворить', instr_other:'Другое',
+    ph_sleep_hours:'Длительность сна (часов)', ph_water_amount:'Количество (мл)',
+    ph_steps:'Количество шагов', ph_med_name:'Название (напр. Парацетамол)', ph_med_dosage:'Дозировка (напр. 500мг)',
+    ph_med_days:'Количество дней (0 = без ограничений)',
+    instr_map_before_meal:'🍽️ До еды', instr_map_with_meal:'🍽️ Во время еды',
+    instr_map_after_meal:'🍽️ После еды', instr_map_with_water:'💧 С водой',
+    instr_map_with_milk:'🥛 С молоком', instr_map_no_chew:'🚫 Не жевать',
+    instr_map_dissolve:'⚗️ Растворить', instr_map_other:'⚙️ Другое',
+    sos_display:'SOS & Контакты',
+    sos_press_hint:'Нажмите для вызова',
+    sos_cancel:'❌ Отмена',
+    sos_calling:'📞 Звоню...',
+    sos_contact_added:'✅ Контакт добавлен',
+    sos_contact_deleted:'🗑️ Контакт удалён',
+    sos_med_saved:'✅ Медкарта сохранена',
+    sos_enter_name:'Введите имя контакта',
+    sos_enter_phone:'Введите номер телефона',
+  },
+  tr: {
+    header_title:'❤️ Sağlık+',
+    card_sleep:'Uyku', card_water:'Su', card_steps:'Adımlar',
+    card_medicine:'İlaçlar', card_schedule:'Takvim', card_sms:'SMS Hatırlatıcı',
+    card_ai:'AI Asistan', card_sos:'Acil Yardım',
+    nav_home:'Ana Sayfa', nav_stats:'İstatistikler', nav_profile:'Profil',
+    header_sleep:'😴 Uyku', sleep_add_title:'Uyku Ekle', sleep_save_btn:'💾 Kaydet',
+    sleep_history_title:'Uyku Geçmişi', hours:'saat', sleep_hours_unit:'bugün saat',
+    header_water:'💧 Su', water_quick_title:'Hızlı Ekleme', water_add_btn:'💾 Ekle',
+    water_history_title:'Su Geçmişi', water_unit:'bugün (hedef: 2000 ml)',
+    header_steps:'👟 Adımlar', steps_add_title:'Adım Ekle', steps_save_btn:'💾 Kaydet',
+    steps_history_title:'Adım Geçmişi', steps:'adım', unit_steps:'bugün adım',
+    header_medicine:'💊 İlaçlar + QR', med_add_title:'➕ İlaç Ekle', med_save_btn:'💾 Kaydet',
+    med_list_title:'📋 İlaç Listem', med_intake_history_title:'📜 Doz Geçmişi',
+    medicine_intakes_unit:'bugünkü dozlar', medicines:'ilaç', intakes:'kullanım',
+    take_now:'Şimdi Al', edit:'Düzenle', delete:'Sil', taken:'Alındı', not_taken:'Alınmadı',
+    qr_scan_btn:'📷 QR Tara',
+    header_schedule:'📅 Günlük Takvim', schedule_desc:'Bugünkü ilaç takvimi',
+    schedule_display:'Görüntüle', schedule_time:'Saat', schedule_medicine:'İlaç',
+    schedule_instruction:'Talimat', schedule_status:'Durum',
+    night:'Gece', early_morning:'Erken Sabah', morning:'Sabah', afternoon:'Öğleden Sonra', evening:'Akşam',
+    header_sms:'📱 SMS Hatırlatıcı', sms_display:'Ayarla',
+    sms_setup_title:'📲 SMS Ayarları (Twilio)', sms_setup_desc:'Otomatik SMS için Twilio bilgilerinizi girin.',
+    sms_save_btn:'💾 Kaydet & Test Et', sms_status_title:'📊 SMS Durumu',
+    sms_sent_unit:'gönderilen SMS', sms_log_title:'📜 SMS Geçmişi',
+    no_sms_yet:'Henüz SMS gönderilmedi.',
+    header_ai:'🤖 AI Asistan', ai_title:'Sağlık Asistanı', ai_send_btn:'Gönder',
+    ai_placeholder:'Sağlıkla ilgili bir soru sor...', ai_display:'Sorular',
+    header_stats:'📊 İstatistikler', stat_sleep_title:'😴 Uyku (bugün)',
+    stat_water_title:'💧 Su', stat_steps_title:'👟 Adımlar', stat_med_title:'💊 İlaçlar',
+    stat_intakes_title:'✅ Bugünkü Dozlar', unit_stat_med:'aktif ilaç',
+    unit_stat_intakes:'kayıtlı doz', charts_btn:'📈 Haftalık Grafikler',
+    header_charts:'📈 Haftalık Grafikler', chart_sleep_title:'😴 Son 7 Gün Uyku',
+    chart_water_title:'💧 Son 7 Gün Su', chart_steps_title:'👟 Son 7 Gün Adım',
+    header_profile:'👤 Profil', theme_label:'Tema:',
+    enter_name:'Lütfen bir ad girin', med_added:'İlaç eklendi: ', med_deleted:'İlaç silindi',
+    confirm_delete:'Bu ilacı silmek istiyor musunuz?', no_data:'Veri yok',
+    no_medicines:'Henüz ilaç eklenmedi', no_records:'Kayıt yok',
+    invalid_qr:'❌ Geçersiz QR kodu', qr_added:'💊 QR ile eklendi: ',
+    time_take:'İlaç zamanı: ', dosage_lbl:'Doz', name_lbl:'Ad', time_lbl:'Saat', days_lbl:'gün',
+    enter_api_key:'API Key girin', api_saved:'✅ API Key kaydedildi',
+    camera_error:'Kamera hatası', updated:'✅ Güncellendi',
+    data_exported:'📁 Veriler dışa aktarıldı', data_imported:'✅ Veriler içe aktarıldı',
+    invalid_file:'❌ Geçersiz dosya formatı', file_error:'❌ Dosya okunamadı',
+    data_cleared:'🗑️ Tüm veriler silindi', confirm_clear_all:'Tüm veriler silinsin mi?',
+    reminder:'Hatırlatma: ', sleep:'Uyku',
+    sms_saved:'✅ SMS ayarları kaydedildi', sms_test_sent:'📱 Test SMS gönderildi!',
+    sms_error:'❌ SMS gönderilemedi: ', sms_enter_all:'Lütfen tüm SMS alanlarını doldurun',
+    sms_sent_log:'SMS Gönderildi', sms_active:'✅ Aktif', sms_passive:'⏸ Pasif',
+    expiry_warning:'⚠️ Son {n} gün', expiry_expired:'🚫 Süresi doldu',
+    instr_select:'Talimat seç...', instr_before_meal:'Yemekten önce',
+    instr_with_meal:'Yemekle birlikte', instr_after_meal:'Yemekten sonra',
+    instr_with_water:'Su ile', instr_with_milk:'Süt ile',
+    instr_no_chew:'Çiğnemeden', instr_dissolve:'Suda çöz', instr_other:'Diğer',
+    ph_sleep_hours:'Uyku süresi (saat)', ph_water_amount:'Diğer miktar (ml)',
+    ph_steps:'Adım sayısı', ph_med_name:'Ad (ör. Parasetamol)', ph_med_dosage:'Doz (ör. 500mg)',
+    ph_med_days:'Gün sayısı (0 = sınırsız)',
+    instr_map_before_meal:'🍽️ Yemekten önce', instr_map_with_meal:'🍽️ Yemekle birlikte',
+    instr_map_after_meal:'🍽️ Yemekten sonra', instr_map_with_water:'💧 Su ile',
+    instr_map_with_milk:'🥛 Süt ile', instr_map_no_chew:'🚫 Çiğnemeden',
+    instr_map_dissolve:'⚗️ Çözerek', instr_map_other:'⚙️ Diğer',
+    sos_display:'SOS ve Kontaklar',
+    sos_press_hint:'Aramak için bas',
+    sos_cancel:'❌ İptal',
+    sos_calling:'📞 Arıyor...',
+    sos_contact_added:'✅ Kişi eklendi',
+    sos_contact_deleted:'🗑️ Kişi silindi',
+    sos_med_saved:'✅ Tıbbi kart kaydedildi',
+    sos_enter_name:'Kişi adı girin',
+    sos_enter_phone:'Telefon numarası girin',
+  },
+  en: {
+    header_title:'❤️ Health+',
+    card_sleep:'Sleep', card_water:'Water', card_steps:'Steps',
+    card_medicine:'Medicines', card_schedule:'Schedule', card_sms:'SMS Reminder',
+    card_ai:'AI Assistant', card_sos:'Emergency SOS',
+    nav_home:'Home', nav_stats:'Statistics', nav_profile:'Profile',
+    header_sleep:'😴 Sleep', sleep_add_title:'Add Sleep', sleep_save_btn:'💾 Save',
+    sleep_history_title:'Sleep History', hours:'hours', sleep_hours_unit:'hours today',
+    header_water:'💧 Water', water_quick_title:'Quick Add', water_add_btn:'💾 Add',
+    water_history_title:'Water History', water_unit:'ml today (goal: 2000 ml)',
+    header_steps:'👟 Steps', steps_add_title:'Add Steps', steps_save_btn:'💾 Save',
+    steps_history_title:'Steps History', steps:'steps', unit_steps:'steps today',
+    header_medicine:'💊 Medicines + QR', med_add_title:'➕ Add Medicine', med_save_btn:'💾 Save',
+    med_list_title:'📋 My Medicines', med_intake_history_title:'📜 Intake History',
+    medicine_intakes_unit:'intakes today', medicines:'medicine', intakes:'intake',
+    take_now:'Take Now', edit:'Edit', delete:'Delete', taken:'Taken', not_taken:'Not Taken',
+    qr_scan_btn:'📷 Scan QR',
+    header_schedule:'📅 Daily Schedule', schedule_desc:'Medicine schedule for today',
+    schedule_display:'View', schedule_time:'Time', schedule_medicine:'Medicine',
+    schedule_instruction:'Instruction', schedule_status:'Status',
+    night:'Night', early_morning:'Early Morning', morning:'Morning', afternoon:'Afternoon', evening:'Evening',
+    header_sms:'📱 SMS Reminder', sms_display:'Setup',
+    sms_setup_title:'📲 SMS Settings (Twilio)', sms_setup_desc:'Enter Twilio credentials for automatic SMS.',
+    sms_save_btn:'💾 Save & Test', sms_status_title:'📊 SMS Status',
+    sms_sent_unit:'messages sent', sms_log_title:'📜 SMS Log',
+    no_sms_yet:'No SMS sent yet.',
+    header_ai:'🤖 AI Assistant', ai_title:'Health Assistant', ai_send_btn:'Send',
+    ai_placeholder:'Ask a health question...', ai_display:'Questions',
+    header_stats:'📊 Statistics', stat_sleep_title:'😴 Sleep (today)',
+    stat_water_title:'💧 Water', stat_steps_title:'👟 Steps', stat_med_title:'💊 Medicines',
+    stat_intakes_title:'✅ Today\'s Intakes', unit_stat_med:'active medicines',
+    unit_stat_intakes:'recorded intakes', charts_btn:'📈 Weekly Charts',
+    header_charts:'📈 Weekly Charts', chart_sleep_title:'😴 Sleep 7 Days',
+    chart_water_title:'💧 Water 7 Days', chart_steps_title:'👟 Steps 7 Days',
+    header_profile:'👤 Profile', theme_label:'Theme:',
+    enter_name:'Please enter a name', med_added:'Medicine added: ', med_deleted:'Medicine deleted',
+    confirm_delete:'Delete this medicine?', no_data:'No data',
+    no_medicines:'No medicines added yet', no_records:'No records',
+    invalid_qr:'❌ Invalid QR code', qr_added:'💊 QR added: ',
+    time_take:'Time to take: ', dosage_lbl:'Dosage', name_lbl:'Name', time_lbl:'Time', days_lbl:'days',
+    enter_api_key:'Enter API Key', api_saved:'✅ API Key saved',
+    camera_error:'Camera error', updated:'✅ Updated',
+    data_exported:'📁 Data exported', data_imported:'✅ Data imported',
+    invalid_file:'❌ Invalid file format', file_error:'❌ File read error',
+    data_cleared:'🗑️ Data cleared', confirm_clear_all:'Delete all data? Cannot be undone.',
+    reminder:'Reminder: ', sleep:'Sleep',
+    sms_saved:'✅ SMS settings saved', sms_test_sent:'📱 Test SMS sent!',
+    sms_error:'❌ SMS failed: ', sms_enter_all:'Please fill all SMS fields',
+    sms_sent_log:'SMS Sent', sms_active:'✅ Active', sms_passive:'⏸ Inactive',
+    expiry_warning:'⚠️ {n} days left', expiry_expired:'🚫 Expired',
+    instr_select:'Select instruction...', instr_before_meal:'Before meal',
+    instr_with_meal:'With meal', instr_after_meal:'After meal',
+    instr_with_water:'With water', instr_with_milk:'With milk',
+    instr_no_chew:'Do not chew', instr_dissolve:'Dissolve', instr_other:'Other',
+    ph_sleep_hours:'Sleep duration (hours)', ph_water_amount:'Other amount (ml)',
+    ph_steps:'Step count', ph_med_name:'Name (e.g. Paracetamol)', ph_med_dosage:'Dosage (e.g. 500mg)',
+    ph_med_days:'Days (0 = unlimited)',
+    instr_map_before_meal:'🍽️ Before meal', instr_map_with_meal:'🍽️ With meal',
+    instr_map_after_meal:'🍽️ After meal', instr_map_with_water:'💧 With water',
+    instr_map_with_milk:'🥛 With milk', instr_map_no_chew:'🚫 Do not chew',
+    instr_map_dissolve:'⚗️ Dissolve', instr_map_other:'⚙️ Other',
+    sos_display:'SOS & Contacts',
+    sos_press_hint:'Press to call',
+    sos_cancel:'❌ Cancel',
+    sos_calling:'📞 Calling...',
+    sos_contact_added:'✅ Contact added',
+    sos_contact_deleted:'🗑️ Contact deleted',
+    sos_med_saved:'✅ Medical card saved',
+    sos_enter_name:'Enter contact name',
+    sos_enter_phone:'Enter phone number',
+  },
+  ar: {
+    header_title:'❤️ صحتي+',
+    card_sleep:'النوم', card_water:'الماء', card_steps:'الخطوات',
+    card_medicine:'الأدوية', card_schedule:'الجدول', card_sms:'تذكير SMS',
+    card_ai:'مساعد ذكي', card_sos:'طوارئ SOS',
+    nav_home:'الرئيسية', nav_stats:'الإحصائيات', nav_profile:'الملف',
+    header_sleep:'😴 النوم', sleep_add_title:'إضافة النوم', sleep_save_btn:'💾 حفظ',
+    sleep_history_title:'سجل النوم', hours:'ساعة', sleep_hours_unit:'ساعات اليوم',
+    header_water:'💧 الماء', water_quick_title:'إضافة سريعة', water_add_btn:'💾 إضافة',
+    water_history_title:'سجل الماء', water_unit:'مل (الهدف: 2000 مل)',
+    header_steps:'👟 الخطوات', steps_add_title:'إضافة خطوات', steps_save_btn:'💾 حفظ',
+    steps_history_title:'سجل الخطوات', steps:'خطوة', unit_steps:'خطوة اليوم',
+    header_medicine:'💊 الأدوية + QR', med_add_title:'➕ إضافة دواء', med_save_btn:'💾 حفظ',
+    med_list_title:'📋 أدويتي', med_intake_history_title:'📜 سجل الجرعات',
+    medicine_intakes_unit:'جرعات اليوم', medicines:'دواء', intakes:'جرعة',
+    take_now:'تناول الآن', edit:'تعديل', delete:'حذف', taken:'تم تناوله', not_taken:'لم يتم',
+    qr_scan_btn:'📷 مسح QR',
+    header_schedule:'📅 جدول اليوم', schedule_desc:'جدول الأدوية لليوم',
+    schedule_display:'عرض', schedule_time:'الوقت', schedule_medicine:'الدواء',
+    schedule_instruction:'التعليمات', schedule_status:'الحالة',
+    night:'ليل', early_morning:'فجر', morning:'صباح', afternoon:'ظهر', evening:'مساء',
+    header_sms:'📱 تذكير SMS', sms_display:'إعداد',
+    sms_setup_title:'📲 إعدادات SMS', sms_setup_desc:'أدخل بيانات Twilio.',
+    sms_save_btn:'💾 حفظ واختبار', sms_status_title:'📊 حالة SMS',
+    sms_sent_unit:'رسائل مرسلة', sms_log_title:'📜 سجل SMS',
+    no_sms_yet:'لم يتم إرسال رسائل.',
+    header_ai:'🤖 مساعد ذكي', ai_title:'مساعد صحي', ai_send_btn:'إرسال',
+    ai_placeholder:'اسأل سؤالاً صحياً...', ai_display:'أسئلة',
+    header_stats:'📊 الإحصائيات', stat_sleep_title:'😴 النوم',
+    stat_water_title:'💧 الماء', stat_steps_title:'👟 الخطوات', stat_med_title:'💊 الأدوية',
+    stat_intakes_title:'✅ جرعات اليوم', unit_stat_med:'أدوية نشطة',
+    unit_stat_intakes:'جرعات مسجلة', charts_btn:'📈 الرسوم الأسبوعية',
+    header_charts:'📈 الرسوم البيانية', chart_sleep_title:'😴 النوم 7 أيام',
+    chart_water_title:'💧 الماء 7 أيام', chart_steps_title:'👟 الخطوات 7 أيام',
+    header_profile:'👤 الملف', theme_label:'المظهر:',
+    enter_name:'أدخل الاسم', med_added:'تم إضافة: ', med_deleted:'تم الحذف',
+    confirm_delete:'حذف هذا الدواء؟', no_data:'لا بيانات',
+    no_medicines:'لا توجد أدوية', no_records:'لا سجلات',
+    invalid_qr:'❌ رمز غير صالح', qr_added:'💊 تم إضافة QR: ',
+    time_take:'وقت الدواء: ', dosage_lbl:'الجرعة', name_lbl:'الاسم', time_lbl:'الوقت', days_lbl:'أيام',
+    enter_api_key:'أدخل API Key', api_saved:'✅ تم الحفظ',
+    camera_error:'خطأ في الكاميرا', updated:'✅ تم',
+    data_exported:'📁 تم التصدير', data_imported:'✅ تم الاستيراد',
+    invalid_file:'❌ صيغة خاطئة', file_error:'❌ خطأ قراءة',
+    data_cleared:'🗑️ تم المسح', confirm_clear_all:'حذف كل البيانات؟',
+    reminder:'تذكير: ', sleep:'النوم',
+    sms_saved:'✅ تم الحفظ', sms_test_sent:'📱 تم الإرسال!',
+    sms_error:'❌ فشل: ', sms_enter_all:'أكمل الحقول',
+    sms_sent_log:'تم الإرسال', sms_active:'✅ نشط', sms_passive:'⏸ غير نشط',
+    expiry_warning:'⚠️ {n} أيام', expiry_expired:'🚫 انتهت',
+    instr_select:'اختر...', instr_before_meal:'قبل الطعام', instr_with_meal:'مع الطعام',
+    instr_after_meal:'بعد الطعام', instr_with_water:'مع الماء', instr_with_milk:'مع الحليب',
+    instr_no_chew:'بدون مضغ', instr_dissolve:'إذابة', instr_other:'آخر',
+    ph_sleep_hours:'مدة النوم (ساعات)', ph_water_amount:'الكمية (مل)',
+    ph_steps:'عدد الخطوات', ph_med_name:'الاسم', ph_med_dosage:'الجرعة',
+    ph_med_days:'عدد الأيام (0 = بلا حد)',
+    instr_map_before_meal:'🍽️ قبل الطعام', instr_map_with_meal:'🍽️ مع الطعام',
+    instr_map_after_meal:'🍽️ بعد الطعام', instr_map_with_water:'💧 مع الماء',
+    instr_map_with_milk:'🥛 مع الحليب', instr_map_no_chew:'🚫 بدون مضغ',
+    instr_map_dissolve:'⚗️ إذابة', instr_map_other:'⚙️ آخر',
+    sos_display:'SOS وجهات الاتصال',
+    sos_press_hint:'اضغط للاتصال',
+    sos_cancel:'❌ إلغاء',
+    sos_calling:'📞 جارٍ الاتصال...',
+    sos_contact_added:'✅ تم إضافة جهة الاتصال',
+    sos_contact_deleted:'🗑️ تم الحذف',
+    sos_med_saved:'✅ تم حفظ البطاقة الطبية',
+    sos_enter_name:'أدخل اسم جهة الاتصال',
+    sos_enter_phone:'أدخل رقم الهاتف',
+  }
+};
+
+const INSTR_KEY_MAP = {
+  'before-meal':'instr_map_before_meal','with-meal':'instr_map_with_meal',
+  'after-meal':'instr_map_after_meal','with-water':'instr_map_with_water',
+  'with-milk':'instr_map_with_milk','no-chew':'instr_map_no_chew',
+  'dissolve':'instr_map_dissolve','other':'instr_map_other'
+};
+
+const HEALTH_TIPS = {
+  ru:["💧 Пейте 2 литра воды ежедневно.","😴 Спите 7–8 часов.","🏃 150 минут упражнений в неделю.","🥗 Ешьте жирную рыбу.","🧘 Попробуйте медитацию.","☀️ Получайте утренний свет.","📱 Избегайте экранов перед сном.","🍎 5 порций овощей и фруктов.","🩺 Регулярно проходите осмотр.","🚶 Короткие прогулки каждый час."],
+  tr:["💧 Günde en az 2 litre su için.","😴 Her gece 7-8 saat uyuyun.","🏃 Haftada 150 dk egzersiz yapın.","🥗 Omega-3 için balık tüketin.","🧘 Meditasyon deneyin.","☀️ Sabah güneş ışığı alın.","📱 Yatmadan önce ekrandan uzak durun.","🍎 Günde 5 porsiyon sebze-meyve.","🩺 Düzenli sağlık kontrolü yaptırın.","🚶 Her saat kısa yürüyüş yapın."],
+  en:["💧 Drink at least 2L of water daily.","😴 Aim for 7–8 hours of sleep.","🏃 Exercise 150 minutes weekly.","🥗 Add fatty fish to your diet.","🧘 Try meditation.","☀️ Get morning sunlight.","📱 Avoid screens before bed.","🍎 Eat 5 servings of fruits/vegetables.","🩺 Schedule regular checkups.","🚶 Take a short walk every hour."],
+  ar:["💧 اشرب 2 لتر ماء يومياً.","😴 نم 7-8 ساعات.","🏃 مارس 150 دقيقة رياضة أسبوعياً.","🥗 تناول الأسماك الدهنية.","🧘 جرب التأمل.","☀️ تعرض لضوء الشمس صباحاً.","📱 ابتعد عن الشاشات قبل النوم.","🍎 تناول 5 حصص خضار وفواكه.","🩺 أجرِ فحوصات دورية.","🚶 تحرك كل ساعة."]
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════════════════
+let currentLanguage = 'ru';
+let appData = {
+  sleep:0, sleepHistory:[],
+  water:0, waterHistory:[],
+  steps:0, stepsHistory:[],
+  medicines:[], medicineIntakes:[],
+  language:'ru', apiKey:'',
+  sms:{ accountSid:'', authToken:'', fromNumber:'', toNumber:'', sentCount:0, log:[] },
+  sos:{ contacts:[], bloodType:'', allergies:'', chronic:'' }
+};
+let html5QrCode = null;
+let remindedMedsToday = new Set();
+let smsSentToday = new Set();
+let sosTimer = null;
+let sosCountdown = 5;
+
+// ═══════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function t(key) {
+  return (LANG[currentLanguage]&&LANG[currentLanguage][key]) ? LANG[currentLanguage][key] : (LANG['en'][key]||key);
+}
+function getInstructionText(instr) {
+  if (!instr||!INSTR_KEY_MAP[instr]) return '';
+  return t(INSTR_KEY_MAP[instr]);
+}
+function escapeHtml(str) {
+  if (typeof str!=='string') return String(str||'');
+  return str.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function getTodayStr() { return new Date().toLocaleDateString('en-CA'); }
+function getTimeStr()  { return new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false}); }
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════════════
+function loadData() {
+  const raw = localStorage.getItem('zdorovye_plus_v1');
+  if (raw) {
+    try {
+      const saved = JSON.parse(raw);
+      appData = { ...appData, ...saved };
+      if (!appData.sms) appData.sms={accountSid:'',authToken:'',fromNumber:'',toNumber:'',sentCount:0,log:[]};
+      if (!appData.sos) appData.sos={contacts:[],bloodType:'',allergies:'',chronic:''};
+      currentLanguage = appData.language || 'ru';
+    } catch(e) { resetDefault(); }
+  } else { resetDefault(); }
+}
+function resetDefault() {
+  appData = {
+    sleep:0, sleepHistory:[], water:0, waterHistory:[], steps:0, stepsHistory:[],
+    medicines:[
+      {id:1001,name:'Витамин D',dosage:'2000 МЕ',time:'09:00',instruction:'with-water',days:0,createdAt:new Date().toISOString()},
+      {id:1002,name:'Магний',   dosage:'400 мг', time:'20:00',instruction:'with-meal', days:0,createdAt:new Date().toISOString()}
+    ],
+    medicineIntakes:[], language:'ru', apiKey:'',
+    sms:{accountSid:'',authToken:'',fromNumber:'',toNumber:'',sentCount:0,log:[]},
+    sos:{contacts:[],bloodType:'',allergies:'',chronic:''}
+  };
+  currentLanguage = 'ru';
+}
+function save() { localStorage.setItem('zdorovye_plus_v1', JSON.stringify(appData)); }
+
+// ═══════════════════════════════════════════════════════════════════════
+// LANGUAGE
+// ═══════════════════════════════════════════════════════════════════════
+function setLanguage(lang) {
+  if (!LANG[lang]) return;
+  currentLanguage = lang;
+  appData.language = lang;
+  save();
+  document.getElementById('langDropdown').classList.remove('show');
+  applyLanguage();
+}
+function toggleLangDropdown() {
+  document.getElementById('langDropdown').classList.toggle('show');
+}
+function applyLanguage() {
+  document.body.dir = currentLanguage==='ar' ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-ph'));
+  });
+  document.querySelectorAll('select option[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  updateAll();
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.lang-btn')&&!e.target.closest('.lang-dropdown')) {
+    document.getElementById('langDropdown').classList.remove('show');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════════════════
+function changeTheme(theme) {
+  document.body.className = (theme==='light') ? '' : `theme-${theme}`;
+  localStorage.setItem('saglik_theme', theme);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════════
+function openScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const target = document.getElementById(`${id}-screen`);
+  if (target) target.classList.add('active');
+  if (id==='medicine') requestNotificationPermission();
+  if (id==='charts')   drawCharts();
+  if (id==='ai')       document.getElementById('apiKeyInput').value = appData.apiKey;
+  if (id==='sms')      renderSmsScreen();
+  if (id==='sos')      renderSosScreen();
+  updateAll();
+}
+function setActiveNav(btn) {
+  const nav = btn.closest('.bottom-nav');
+  if (!nav) return;
+  nav.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SOS — Acil Durum Sistemi
+// ═══════════════════════════════════════════════════════════════════════
+function startSosCountdown() {
+  const counterEl  = document.getElementById('sosCounter');
+  const statusEl   = document.getElementById('sosStatusMsg');
+  const cancelBtn  = document.getElementById('sosCancelBtn');
+  const bigBtn     = document.getElementById('sosBigBtn');
+  sosCountdown = 5;
+  counterEl.style.display  = 'block';
+  statusEl.style.display   = 'block';
+  cancelBtn.style.display  = 'block';
+  bigBtn.style.display     = 'none';
+  counterEl.textContent    = sosCountdown;
+  statusEl.textContent     = t('sos_calling');
+  if (sosTimer) clearInterval(sosTimer);
+  sosTimer = setInterval(() => {
+    sosCountdown--;
+    counterEl.textContent = sosCountdown;
+    if (sosCountdown <= 0) {
+      clearInterval(sosTimer);
+      triggerSosCall();
+    }
+  }, 1000);
+}
+function cancelSos() {
+  if (sosTimer) clearInterval(sosTimer);
+  document.getElementById('sosCounter').style.display  = 'none';
+  document.getElementById('sosStatusMsg').style.display = 'none';
+  document.getElementById('sosCancelBtn').style.display = 'none';
+  document.getElementById('sosBigBtn').style.display    = 'flex';
+}
+function triggerSosCall() {
+  const contacts = appData.sos.contacts;
+  if (contacts.length > 0) {
+    const firstContact = contacts[0];
+    window.location.href = `tel:${firstContact.phone}`;
+    document.getElementById('sosStatusMsg').textContent = `📞 ${firstContact.name}...`;
+  } else {
+    window.location.href = 'tel:112';
+    document.getElementById('sosStatusMsg').textContent = '📞 112...';
+  }
+  setTimeout(cancelSos, 3000);
+}
+
+function addSosContact() {
+  const name     = document.getElementById('sos-contact-name').value.trim();
+  const phone    = document.getElementById('sos-contact-phone').value.trim();
+  const relation = document.getElementById('sos-contact-relation').value.trim();
+  if (!name)  { toast(t('sos_enter_name'));  return; }
+  if (!phone) { toast(t('sos_enter_phone')); return; }
+  if (!appData.sos.contacts) appData.sos.contacts = [];
+  appData.sos.contacts.push({ id:Date.now(), name, phone, relation });
+  document.getElementById('sos-contact-name').value    = '';
+  document.getElementById('sos-contact-phone').value   = '';
+  document.getElementById('sos-contact-relation').value= '';
+  save(); renderSosContacts();
+  toast(t('sos_contact_added'));
+}
+function deleteSosContact(id) {
+  appData.sos.contacts = appData.sos.contacts.filter(c=>c.id!==id);
+  save(); renderSosContacts();
+  toast(t('sos_contact_deleted'));
+}
+function saveMedCard() {
+  appData.sos.bloodType  = document.getElementById('sos-blood-type').value.trim();
+  appData.sos.allergies  = document.getElementById('sos-allergies').value.trim();
+  appData.sos.chronic    = document.getElementById('sos-chronic').value.trim();
+  save(); renderMedCardDisplay();
+  toast(t('sos_med_saved'));
+}
+function renderSosContacts() {
+  const container = document.getElementById('sos-contacts-list');
+  if (!container) return;
+  const contacts = appData.sos?.contacts || [];
+  if (!contacts.length) {
+    container.innerHTML = `<div class="sos-info-box" style="text-align:center;opacity:0.7;">Контакты не добавлены</div>`;
+    return;
+  }
+  container.innerHTML = contacts.map(c => `
+    <div class="sos-contact-card">
+      <div>
+        <div class="sos-contact-name">👤 ${escapeHtml(c.name)}</div>
+        <div class="sos-contact-phone">${escapeHtml(c.phone)} ${c.relation?'· '+escapeHtml(c.relation):''}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="sos-call-btn" onclick="window.location.href='tel:${escapeHtml(c.phone)}'">📞</button>
+        <button class="sos-call-btn" style="background:rgba(220,38,38,0.4);" onclick="deleteSosContact(${c.id})">🗑️</button>
+      </div>
+    </div>`
+  ).join('');
+}
+function renderMedCardDisplay() {
+  const div = document.getElementById('sos-med-card-display');
+  if (!div) return;
+  const sos = appData.sos;
+  if (!sos.bloodType && !sos.allergies && !sos.chronic) { div.innerHTML=''; return; }
+  div.innerHTML = `<div class="sos-info-box">
+    ${sos.bloodType ? `🩸 <strong>Группа крови:</strong> ${escapeHtml(sos.bloodType)}<br>` : ''}
+    ${sos.allergies ? `⚠️ <strong>Аллергии:</strong> ${escapeHtml(sos.allergies)}<br>` : ''}
+    ${sos.chronic   ? `🏥 <strong>Хронические:</strong> ${escapeHtml(sos.chronic)}` : ''}
+  </div>`;
+}
+function renderSosScreen() {
+  renderSosContacts();
+  renderMedCardDisplay();
+  const sos = appData.sos;
+  if (sos.bloodType)  document.getElementById('sos-blood-type').value = sos.bloodType;
+  if (sos.allergies)  document.getElementById('sos-allergies').value  = sos.allergies;
+  if (sos.chronic)    document.getElementById('sos-chronic').value    = sos.chronic;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MEDICINE STATUS
+// ═══════════════════════════════════════════════════════════════════════
+function daysBetween(d1, d2) {
+  const a=new Date(d1.getFullYear(),d1.getMonth(),d1.getDate());
+  const b=new Date(d2.getFullYear(),d2.getMonth(),d2.getDate());
+  return Math.floor((b-a)/86400000);
+}
+function getMedicineStatus(med) {
+  if (!med) return {active:false,daysLeft:0,status:'unknown'};
+  if (!med.days||med.days===0) return {active:true,daysLeft:'∞',status:'infinite'};
+  const created=med.createdAt?new Date(med.createdAt):new Date();
+  if (isNaN(created.getTime())) return {active:true,daysLeft:'∞',status:'infinite'};
+  const elapsed=daysBetween(created,new Date());
+  const left=med.days-elapsed;
+  if (left<=0)  return {active:false,daysLeft:0,status:'expired'};
+  if (left<=3)  return {active:true,daysLeft:left,status:'expiringSoon'};
+  return             {active:true,daysLeft:left,status:'active'};
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// QR SCANNER
+// ═══════════════════════════════════════════════════════════════════════
+function startQrScanner() {
+  document.getElementById('qrModal').classList.add('active');
+  document.getElementById('qr-reader').innerHTML='';
+  if (html5QrCode) { try{html5QrCode.stop().catch(_=>_);}catch(e){} }
+  html5QrCode=new Html5Qrcode("qr-reader");
+  html5QrCode.start(
+    {facingMode:"environment"},{fps:10,qrbox:250},
+    decoded=>{handleQr(decoded);stopQrScanner();document.getElementById('qrModal').classList.remove('active');},
+    _=>{}
+  ).catch(()=>toast(t('camera_error')));
+}
+function stopQrScanner() {
+  if (html5QrCode&&html5QrCode.isScanning) html5QrCode.stop().catch(_=>_);
+}
+function handleQr(data) {
+  const parts=data.includes('|')?data.split('|'):data.includes(',')?data.split(','):[data.trim(),'',''];
+  const name=parts[0]?.trim();
+  if (!name){toast(t('invalid_qr'));return;}
+  addMedicineObject({id:Date.now(),name,dosage:parts[1]?.trim()||'1',time:parts[2]?.trim()||'—',instruction:'with-water',days:0,createdAt:new Date().toISOString()});
+  toast(t('qr_added')+name);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MEDICINE CRUD
+// ═══════════════════════════════════════════════════════════════════════
+function addMedicineObject(med){appData.medicines.push(med);save();updateAll();}
+function addNewMedicine() {
+  const name=document.getElementById('med-name').value.trim();
+  const dosage=document.getElementById('med-dosage').value.trim()||'1';
+  const time=document.getElementById('med-time').value||'—';
+  const instruction=document.getElementById('med-instruction').value||'';
+  const days=parseInt(document.getElementById('med-days').value)||0;
+  if (!name){toast(t('enter_name'));return;}
+  addMedicineObject({id:Date.now(),name,dosage,time,instruction,days,createdAt:new Date().toISOString()});
+  ['med-name','med-dosage','med-time','med-days'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('med-instruction').value='';
+  document.getElementById('med-days').value='0';
+  toast(t('med_added')+name);
+}
+function takeMedicine(medId) {
+  const med=appData.medicines.find(m=>m.id==medId);
+  if (!med) return;
+  appData.medicineIntakes.unshift({id:Date.now()+Math.random(),medicineId:med.id,dateStr:getTodayStr(),takenAt:getTimeStr(),medicineName:med.name});
+  save();updateAll();toast('✅ '+med.name);
+}
+function deleteMedicine(medId) {
+  if (confirm(t('confirm_delete'))){
+    appData.medicines=appData.medicines.filter(m=>m.id!=medId);
+    save();updateAll();toast(t('med_deleted'));
+  }
+}
+function editMedicine(medId) {
+  const med=appData.medicines.find(m=>m.id==medId);
+  if (!med) return;
+  const n=prompt(t('name_lbl')+':',med.name); if(n===null) return;
+  const d=prompt(t('dosage_lbl')+':',med.dosage); if(d===null) return;
+  const ti=prompt(t('time_lbl')+' (HH:MM):',med.time); if(ti===null) return;
+  med.name=n.trim()||med.name;
+  med.dosage=d.trim()||med.dosage;
+  med.time=ti.trim()||med.time;
+  save();updateAll();toast(t('updated'));
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SMS SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+function saveSmsSettings() {
+  const sid=document.getElementById('sms-account-sid').value.trim();
+  const token=document.getElementById('sms-auth-token').value.trim();
+  const from=document.getElementById('sms-from-number').value.trim();
+  const to=document.getElementById('sms-to-number').value.trim();
+  if (!sid||!token||!from||!to){toast(t('sms_enter_all'));return;}
+  appData.sms.accountSid=sid; appData.sms.authToken=token;
+  appData.sms.fromNumber=from; appData.sms.toNumber=to;
+  save(); toast(t('sms_saved'));
+  sendSms('🧪 Тест: Здоровье+ ✅', true);
+}
+async function sendSms(body, isTest=false) {
+  const {accountSid,authToken,fromNumber,toNumber}=appData.sms;
+  if (!accountSid||!authToken||!fromNumber||!toNumber) return;
+  const logEntry={time:new Date().toLocaleTimeString(),date:getTodayStr(),message:body,status:'sending'};
+  appData.sms.log.unshift(logEntry);
+  try {
+    const credentials=btoa(`${accountSid}:${authToken}`);
+    const resp=await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,{
+      method:'POST',
+      headers:{'Authorization':`Basic ${credentials}`,'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({From:fromNumber,To:toNumber,Body:body})
+    });
+    const data=await resp.json();
+    if (resp.ok&&data.sid){
+      logEntry.status='sent';
+      appData.sms.sentCount=(appData.sms.sentCount||0)+1;
+      if (isTest) toast(t('sms_test_sent'));
+    } else {
+      logEntry.status='error';
+      toast(t('sms_error')+(data.message||'Unknown'));
+    }
+  } catch(err) {
+    logEntry.status='error';
+    toast(t('sms_error')+(err.message||'network error'));
+  }
+  save(); renderSmsLog(); renderSmsScreen();
+}
+function renderSmsScreen() {
+  const sms=appData.sms;
+  const cnt=document.getElementById('sms-sent-count'); if(cnt) cnt.textContent=sms.sentCount||0;
+  const ab=document.getElementById('sms-active-badge');
+  if (ab) {
+    const isActive=!!(sms.accountSid&&sms.authToken&&sms.fromNumber&&sms.toNumber);
+    ab.textContent=isActive?t('sms_active'):t('sms_passive');
+    ab.style.background=isActive?'#dcfce7':'#f1f5f9';
+    ab.style.color=isActive?'#15803d':'#64748b';
+  }
+  const pb=document.getElementById('sms-phone-badge'); if(pb) pb.textContent=sms.toNumber?'📱 '+sms.toNumber:'📱 —';
+  [['sms-account-sid',sms.accountSid],['sms-auth-token',sms.authToken],['sms-from-number',sms.fromNumber],['sms-to-number',sms.toNumber]].forEach(([id,val])=>{
+    const el=document.getElementById(id); if(el&&val) el.value=val;
+  });
+  renderSmsLog();
+}
+function renderSmsLog() {
+  const container=document.getElementById('sms-log-container'); if(!container) return;
+  const log=appData.sms?.log||[];
+  if (!log.length){container.innerHTML=`<div class="sms-log-item" style="color:var(--text-secondary);">${t('no_sms_yet')}</div>`;return;}
+  container.innerHTML=log.slice(0,20).map(e=>{
+    const ic=e.status==='sent'?'✅':e.status==='error'?'❌':'⏳';
+    return `<div class="sms-log-item"><span style="font-size:18px;">${ic}</span><div style="flex:1;"><div style="font-size:12px;font-weight:600;">${t('sms_sent_log')} — ${e.date} ${e.time}</div><div style="font-size:12px;">${escapeHtml(e.message)}</div></div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// REMINDERS
+// ═══════════════════════════════════════════════════════════════════════
+function requestNotificationPermission() {
+  if ('Notification' in window&&Notification.permission==='default') Notification.requestPermission();
+}
+function checkReminders() {
+  const now=new Date();
+  const currentTime=now.toTimeString().slice(0,5);
+  if (currentTime==='00:00'){remindedMedsToday.clear();smsSentToday.clear();}
+  appData.medicines.forEach(med=>{
+    if (!med.time||med.time==='—') return;
+    const status=getMedicineStatus(med);
+    if (!status.active) return;
+    const takenToday=appData.medicineIntakes.some(i=>i.medicineId===med.id&&i.dateStr===getTodayStr());
+    if (takenToday) return;
+    if (med.time===currentTime&&!remindedMedsToday.has(med.id)){
+      remindedMedsToday.add(med.id);
+      toast(`🔔 ${t('reminder')}${med.name}`);
+      if ('Notification' in window&&Notification.permission==='granted') {
+        new Notification(`💊 ${t('time_take')}${med.name}`,{body:`${t('dosage_lbl')}: ${med.dosage}`});
+      }
+      const smsKey=`${getTodayStr()}_${med.id}`;
+      if (!smsSentToday.has(smsKey)&&appData.sms.accountSid){
+        smsSentToday.add(smsKey);
+        sendSms(`💊 ${t('reminder')}${med.name} - ${med.dosage}. ${getInstructionText(med.instruction)||''}`);
+      }
+    }
+    const mp=med.time.split(':').map(Number);
+    const md=new Date(); md.setHours(mp[0],mp[1],0,0);
+    const diff=md-now;
+    const sk=`pre_${getTodayStr()}_${med.id}`;
+    if (diff>0&&diff<=60000&&!smsSentToday.has(sk)&&appData.sms.accountSid){
+      smsSentToday.add(sk);
+      sendSms(`⏰ Через 1 мин: ${med.name} - ${med.dosage}`);
+    }
+  });
+}
+setInterval(checkReminders,30000);
+
+// ═══════════════════════════════════════════════════════════════════════
+// HEALTH TRACKERS
+// ═══════════════════════════════════════════════════════════════════════
+function addSleep() {
+  const v=parseFloat(document.getElementById('sleep-input').value);
+  if (v>0){
+    appData.sleep=v;
+    appData.sleepHistory.unshift({date:getTodayStr(),hours:v});
+    document.getElementById('sleep-input').value='';
+    save();updateAll();toast(`😴 ${t('sleep')}: ${v} ${t('hours')}`);
+  }
+}
+function addWater(ml){
+  appData.water+=ml;
+  appData.waterHistory.unshift({date:getTodayStr(),amount:ml});
+  save();updateAll();toast(`💧 +${ml} мл`);
+}
+function addWaterManual(){
+  const v=parseInt(document.getElementById('water-input').value);
+  if (v>0){addWater(v);document.getElementById('water-input').value='';}
+}
+function addSteps(){
+  const v=parseInt(document.getElementById('steps-input').value);
+  if (v>0){
+    appData.steps=v;
+    appData.stepsHistory.unshift({date:getTodayStr(),steps:v});
+    document.getElementById('steps-input').value='';
+    save();updateAll();toast(`👟 ${t('steps')}: ${v}`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════════
+function renderHistory(elId,arr,key,unit){
+  const el=document.getElementById(elId);if(!el)return;
+  if (!arr.length){el.innerHTML=`<div class="history-item">${t('no_data')}</div>`;return;}
+  el.innerHTML=arr.slice(0,20).map(e=>`<div class="history-item"><span>${e.date||e.dateStr}</span><span>${e[key]} ${unit}</span></div>`).join('');
+}
+function generateMedQr(med){
+  const qrData=`${med.name}|${med.dosage}|${med.time}`;
+  return `<img src="https://chart.googleapis.com/chart?chs=80x80&cht=qr&chl=${encodeURIComponent(qrData)}" style="width:44px;height:44px;border-radius:8px;background:white;padding:3px;" alt="QR">`;
+}
+function renderMedicines(){
+  const container=document.getElementById('medicine-list-container');if(!container)return;
+  if (!appData.medicines.length){container.innerHTML=`<div class="history-item">${t('no_medicines')}</div>`;return;}
+  container.innerHTML=appData.medicines.map(med=>{
+    const taken=appData.medicineIntakes.filter(i=>i.medicineId===med.id&&i.dateStr===getTodayStr()).length;
+    const statusCls=taken?'status-taken':'status-missed';
+    const statusText=taken?`✅ ${t('taken')} (${taken}x)`:`⚠️ ${t('not_taken')}`;
+    const instrText=getInstructionText(med.instruction);
+    const medStatus=getMedicineStatus(med);
+    let expiryHtml='';
+    if (medStatus.status==='expired') expiryHtml=`<div class="expiry-expired">${t('expiry_expired')}</div>`;
+    else if (medStatus.status==='expiringSoon') expiryHtml=`<div class="expiry-warning">${t('expiry_warning').replace('{n}',medStatus.daysLeft)}</div>`;
+    const daysLabel=medStatus.daysLeft!=='∞'&&medStatus.daysLeft>0?` (${medStatus.daysLeft} ${t('days_lbl')})`:'';
+    return `<div class="med-grid-item">
+      <div class="med-header"><span class="med-name">💊 ${escapeHtml(med.name)}</span><span class="med-badge">${escapeHtml(med.time)}</span></div>
+      <div class="med-details">${escapeHtml(med.dosage)}${daysLabel}</div>
+      ${instrText?`<div class="med-instructions">📋 ${instrText}</div>`:''}
+      ${expiryHtml}
+      <div class="today-status ${statusCls}">${statusText}</div>
+      <div class="med-actions">
+        <button class="btn btn-small btn-outline" onclick="takeMedicine(${med.id})">💊 ${t('take_now')}</button>
+        <button class="btn btn-small btn-outline" onclick="editMedicine(${med.id})">✏️ ${t('edit')}</button>
+        <button class="btn btn-small" style="background:#fee2e2;color:#b91c1c;" onclick="deleteMedicine(${med.id})">🗑️ ${t('delete')}</button>
+        <div style="margin-left:auto;" title="QR">${generateMedQr(med)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderIntakeHistory(){
+  const div=document.getElementById('intake-history-list');if(!div)return;
+  if (!appData.medicineIntakes.length){div.innerHTML=`<div class="history-item">${t('no_records')}</div>`;return;}
+  div.innerHTML=appData.medicineIntakes.slice(0,30).map(i=>`<div class="history-item"><span>📅 ${i.dateStr} ${i.takenAt||''}</span><span>💊 ${escapeHtml(i.medicineName)}</span></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SCHEDULE
+// ═══════════════════════════════════════════════════════════════════════
+function getTimeColor(time){
+  if (!time||time==='—') return 'schedule-row-night';
+  const h=parseInt(time.split(':')[0],10);
+  if (isNaN(h)||h>=22||h<6) return 'schedule-row-night';
+  if (h>=6&&h<9)   return 'schedule-row-early';
+  if (h>=9&&h<12)  return 'schedule-row-morning';
+  if (h>=12&&h<17) return 'schedule-row-afternoon';
+  return 'schedule-row-evening';
+}
+function getTimePeriod(time){
+  if (!time||time==='—') return '🌙 '+t('night');
+  const h=parseInt(time.split(':')[0],10);
+  if (isNaN(h)||h>=22||h<6) return '🌙 '+t('night');
+  if (h>=6&&h<9)   return '🌅 '+t('early_morning');
+  if (h>=9&&h<12)  return '☀️ '+t('morning');
+  if (h>=12&&h<17) return '☀️ '+t('afternoon');
+  return '🌆 '+t('evening');
+}
+function renderSchedule(){
+  const container=document.getElementById('schedule-table-container');if(!container)return;
+  const active=appData.medicines.filter(m=>getMedicineStatus(m).active);
+  if (!active.length){container.innerHTML=`<div class="history-item" style="text-align:center;padding:20px;">${t('no_medicines')}</div>`;return;}
+  const sorted=[...active].sort((a,b)=>{
+    const tA=(!a.time||a.time==='—')?'23:59':a.time;
+    const tB=(!b.time||b.time==='—')?'23:59':b.time;
+    return tA.localeCompare(tB);
+  });
+  let html=`<table class="schedule-table"><thead><tr><th>${t('schedule_time')}</th><th>${t('schedule_medicine')}</th><th>${t('schedule_instruction')}</th><th>${t('schedule_status')}</th></tr></thead><tbody>`;
+  sorted.forEach(med=>{
+    const taken=appData.medicineIntakes.some(i=>i.medicineId===med.id&&i.dateStr===getTodayStr());
+    html+=`<tr class="${getTimeColor(med.time)}"><td><strong>${escapeHtml(med.time||'—')}</strong><br><small>${getTimePeriod(med.time)}</small></td><td><strong>${escapeHtml(med.name)}</strong><br><small>${escapeHtml(med.dosage)}</small></td><td style="font-size:13px;">${getInstructionText(med.instruction)||'—'}</td><td style="text-align:center;font-size:20px;">${taken?'✅':'⏳'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  container.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// UPDATE ALL
+// ═══════════════════════════════════════════════════════════════════════
+function updateAll(){
+  const todayIntakes=appData.medicineIntakes.filter(i=>i.dateStr===getTodayStr()).length;
+  document.getElementById('sleep-display').textContent=`${appData.sleep} ${t('hours')}`;
+  document.getElementById('water-display').textContent=`${appData.water} мл`;
+  document.getElementById('steps-display').textContent=`${appData.steps} ${t('steps')}`;
+  document.getElementById('medicine-display').textContent=`${appData.medicines.length} ${t('medicines')}, ${todayIntakes} ${t('intakes')}`;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('sleep-total',appData.sleep); set('water-total',appData.water);
+  set('steps-total',appData.steps); set('med-today-count',todayIntakes);
+  set('stats-sleep',appData.sleep); set('stats-water',appData.water);
+  set('stats-steps',appData.steps); set('stats-medicine-count',appData.medicines.length);
+  set('stats-today-intakes',todayIntakes);
+  const localeMap={ru:'ru-RU',tr:'tr-TR',ar:'ar-SA',en:'en-US'};
+  const locale=localeMap[currentLanguage]||'ru-RU';
+  const dateEl=document.getElementById('currentDate');
+  if (dateEl) dateEl.textContent=new Date().toLocaleDateString(locale,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  renderHistory('sleep-history',appData.sleepHistory,'hours',t('hours'));
+  renderHistory('water-history',appData.waterHistory,'amount','мл');
+  renderHistory('steps-history',appData.stepsHistory,'steps',t('steps'));
+  renderMedicines();
+  renderIntakeHistory();
+  renderSchedule();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════════════════════
+let chartInstances={};
+function drawCharts(){
+  const last7=[];
+  for (let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last7.push(d.toLocaleDateString('en-CA'));}
+  const sum=(arr,key)=>last7.map(date=>arr.filter(e=>(e.date||e.dateStr)===date).reduce((s,e)=>s+(e[key]||0),0));
+  const ctx=id=>document.getElementById(id)?.getContext('2d');
+  const c1=ctx('sleepChart'),c2=ctx('waterChart'),c3=ctx('stepsChart');
+  if (!c1||!c2||!c3) return;
+  Object.values(chartInstances).forEach(c=>c.destroy());
+  chartInstances.sleep=new Chart(c1,{type:'bar',data:{labels:last7,datasets:[{label:t('hours'),data:sum(appData.sleepHistory,'hours'),backgroundColor:'#6366f1'}]}});
+  chartInstances.water=new Chart(c2,{type:'line',data:{labels:last7,datasets:[{label:'мл',data:sum(appData.waterHistory,'amount'),borderColor:'#0ea5e9',fill:false}]}});
+  chartInstances.steps=new Chart(c3,{type:'bar',data:{labels:last7,datasets:[{label:t('steps'),data:sum(appData.stepsHistory,'steps'),backgroundColor:'#10b981'}]}});
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DATA I/O
+// ═══════════════════════════════════════════════════════════════════════
+function exportData(){
+  const blob=new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`zdorovye_backup_${getTodayStr()}.json`;a.click();
+  toast(t('data_exported'));
+}
+function importData(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if (data.sleep!==undefined&&data.medicines){
+        appData={...appData,...data};
+        if (!appData.sms) appData.sms={accountSid:'',authToken:'',fromNumber:'',toNumber:'',sentCount:0,log:[]};
+        if (!appData.sos) appData.sos={contacts:[],bloodType:'',allergies:'',chronic:''};
+        currentLanguage=appData.language||'ru';
+        save();applyLanguage();updateAll();toast(t('data_imported'));
+      } else {toast(t('invalid_file'));}
+    }catch{toast(t('file_error'));}
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+function saveApiKey(){
+  const key=document.getElementById('apiKeyInput').value.trim();
+  if (!key){toast(t('enter_api_key'));return;}
+  appData.apiKey=key;save();toast(t('api_saved'));
+}
+function clearAllData(){
+  if (confirm(t('confirm_clear_all'))){resetDefault();save();applyLanguage();updateAll();toast(t('data_cleared'));}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// AI ASSISTANT — DeepSeek entegrasyonu
+// ═══════════════════════════════════════════════════════════════════════
+async function sendAiQuestion(){
+  const input=document.getElementById('aiQuestion');
+  const msgBox=document.getElementById('aiMessages');
+  const sendBtn=document.getElementById('ai-send-btn');
+  if (!input||!msgBox) return;
+  const question=input.value.trim();
+  if (!question){toast(t('enter_name'));return;}
+  msgBox.innerHTML+=`<div class="ai-chat-message"><strong>🧑:</strong> ${escapeHtml(question)}</div>`;
+  msgBox.scrollTop=msgBox.scrollHeight;
+  input.value='';
+  if (sendBtn){sendBtn.disabled=true;sendBtn.textContent='⏳';}
+
+  if (!appData.apiKey){
+    const tips=HEALTH_TIPS[currentLanguage]||HEALTH_TIPS['ru'];
+    const tip=tips[Math.floor(Math.random()*tips.length)];
+    msgBox.innerHTML+=`<div class="ai-chat-message"><strong>🤖 (Offline):</strong> ${tip}<br><small style="opacity:0.6;">Для полных ответов добавьте DeepSeek API Key в Профиле.</small></div>`;
+    msgBox.scrollTop=msgBox.scrollHeight;
+    if (sendBtn){sendBtn.disabled=false;sendBtn.textContent=t('ai_send_btn');}
+    return;
+  }
+
+  try {
+    const langName={ru:'Russian',tr:'Turkish',ar:'Arabic',en:'English'}[currentLanguage]||'Russian';
+    const context=`Sleep:${appData.sleep}h, Water:${appData.water}ml, Steps:${appData.steps}, Meds:${appData.medicines.map(m=>m.name).join(', ')||'—'}`;
+
+    // DeepSeek API — OpenAI uyumlu endpoint
+    const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${appData.apiKey}`
+      },
+      body:JSON.stringify({
+        model:'deepseek-chat',
+        messages:[
+          {role:'system',content:`You are a health assistant. Answer briefly (1-3 sentences). Respond in ${langName}. No medical diagnosis. User health context: ${context}`},
+          {role:'user',content:question}
+        ],
+        max_tokens:300,
+        temperature:0.6
+      })
+    });
+    const data=await resp.json();
+    const answer=resp.ok
+      ? (data.choices?.[0]?.message?.content||'Нет ответа.')
+      : (data.error?.message||'Ошибка API DeepSeek');
+    msgBox.innerHTML+=`<div class="ai-chat-message"><strong>🤖 <span class="deepseek-badge" style="font-size:10px;">DeepSeek</span>:</strong> ${escapeHtml(answer)}</div>`;
+  } catch(err){
+    const tips=HEALTH_TIPS[currentLanguage]||HEALTH_TIPS['ru'];
+    msgBox.innerHTML+=`<div class="ai-chat-message"><strong>🤖 (Offline):</strong> ${tips[Math.floor(Math.random()*tips.length)]}</div>`;
+  }
+  msgBox.scrollTop=msgBox.scrollHeight;
+  if (sendBtn){sendBtn.disabled=false;sendBtn.textContent=t('ai_send_btn');}
+}
+document.addEventListener('DOMContentLoaded',function(){
+  const aiQ=document.getElementById('aiQuestion');
+  if (aiQ) aiQ.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAiQuestion();}});
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════
+loadData();
+save();
+(function(){
+  const saved=localStorage.getItem('saglik_theme')||'light';
+  const sel=document.getElementById('themeSelector');
+  if (sel) sel.value=saved;
+  if (saved!=='light') document.body.className=`theme-${saved}`;
+})();
+applyLanguage();
+checkReminders();
+</script>
+</body>
+</html>
